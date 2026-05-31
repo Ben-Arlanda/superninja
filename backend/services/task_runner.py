@@ -9,7 +9,7 @@ import asyncio
 
 from agents.page_generator import generate_page_code
 from models.task import Task, TaskStatus
-from services import workspace
+from services import git_ops, workspace
 
 STEP_DELAY_SECONDS = 0.5
 
@@ -31,8 +31,9 @@ async def run_task(task: Task) -> None:
 
         # --- STUBS (become real in Phases 4-6) ---
         task.status = TaskStatus.committing
-        task.log("Committing generated code to Git... (stub)")
-        await asyncio.sleep(STEP_DELAY_SECONDS)
+        task.log("Committing generated app to a fresh Git repo...")
+        await git_ops.init_and_commit(workspace_path, task.prompt)
+        task.log("Committed on branch 'main'.")
 
         task.status = TaskStatus.pushing
         task.log("Pushing code to GitHub... (stub)")

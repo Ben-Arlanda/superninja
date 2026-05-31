@@ -49,6 +49,11 @@ def fake_generation(monkeypatch, tmp_path):
 
     monkeypatch.setattr(task_runner.workspace, "write_page", fake_write_page)
 
+    async def fake_commit(_path, _prompt):
+        return None
+
+    monkeypatch.setattr(task_runner.git_ops, "init_and_commit", fake_commit)
+
 
 # --- Runner unit tests (lifecycle correctness) ---
 
