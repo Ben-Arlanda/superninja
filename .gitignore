@@ -1,7 +1,12 @@
 .DS_Store
 backend/venv/
-backend/__pycache__/
+__pycache__/
+.pytest_cache/
+.idea/
 frontend/node_modules/
 frontend/.next/
 .env
 .env.local
+
+# Local-only build journal (never committed)
+BUILD_LOG.md
