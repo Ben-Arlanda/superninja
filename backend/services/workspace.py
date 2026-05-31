@@ -19,7 +19,13 @@ def create_workspace(task_id: str) -> Path:
     dest = settings.workspace_dir / task_id
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(settings.template_dir, dest)
+    # Never copy build artifacts even if they appear in the template — they're huge
+    # and Vercel/npm regenerate them anyway.
+    shutil.copytree(
+        settings.template_dir,
+        dest,
+        ignore=shutil.ignore_patterns("node_modules", ".next"),
+    )
     return dest
 
 
