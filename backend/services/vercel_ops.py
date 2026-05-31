@@ -31,11 +31,16 @@ def _extract_url(output: str) -> str:
 
 
 async def deploy(workspace_path: Path) -> str:
-    """Deploy the workspace to Vercel (production) and return the live URL."""
+    """Deploy the workspace to Vercel (production) and return the live URL.
+
+    The CLI requires an explicit --scope in non-interactive mode (no default is
+    applied), so we pass VERCEL_SCOPE when it's set (the team/username slug; not a
+    secret — it appears in deployment URLs).
+    """
     token = _token()
-    result = await shell.run(
-        ["vercel", "deploy", "--prod", "--yes", "--token", token],
-        cwd=workspace_path,
-        secret=token,
-    )
+    cmd = ["vercel", "deploy", "--prod", "--yes", "--token", token]
+    scope = os.getenv("VERCEL_SCOPE")
+    if scope:
+        cmd += ["--scope", scope]
+    result = await shell.run(cmd, cwd=workspace_path, secret=token)
     return _extract_url(result.stdout + "\n" + result.stderr)

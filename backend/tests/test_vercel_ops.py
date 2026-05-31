@@ -46,6 +46,26 @@ def test_deploy_runs_prod_and_returns_url(monkeypatch):
     assert captured["secret"] == "vc_fake"  # so a failure redacts the token
 
 
+def test_deploy_passes_scope_when_set(monkeypatch):
+    monkeypatch.setenv("VERCEL_TOKEN", "vc_fake")
+    monkeypatch.setenv("VERCEL_SCOPE", "my-team")
+    captured: dict = {}
+
+    async def fake_run(cmd, cwd=None, secret=None):
+        captured["cmd"] = cmd
+
+        class _Result:
+            stdout = "https://x.vercel.app"
+            stderr = ""
+
+        return _Result()
+
+    monkeypatch.setattr(vercel_ops.shell, "run", fake_run)
+    asyncio.run(vercel_ops.deploy(Path("/tmp/ws")))
+    assert "--scope" in captured["cmd"]
+    assert "my-team" in captured["cmd"]
+
+
 def test_missing_token_raises(monkeypatch):
     monkeypatch.delenv("VERCEL_TOKEN", raising=False)
     with pytest.raises(ValueError):
