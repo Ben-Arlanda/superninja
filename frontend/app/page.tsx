@@ -113,7 +113,7 @@ export default function Home() {
                   setTask(null);
                   setPrompt("");
                 }}
-                className="rounded-full border border-border px-5 py-2 font-mono text-xs uppercase tracking-[0.2em] text-fg transition hover:border-accent/60"
+                className="cursor-pointer rounded-full border border-border px-5 py-2 font-mono text-xs uppercase tracking-[0.2em] text-fg transition hover:border-accent/60"
               >
                 New build
               </button>
@@ -121,7 +121,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={submitting || running || !prompt.trim()}
-                className="rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-bg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-bg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting ? "Launching…" : "Build it →"}
               </button>
