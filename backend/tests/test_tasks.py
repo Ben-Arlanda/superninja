@@ -20,16 +20,6 @@ _FAKE_TSX = "export default function Page() {\n  return <main>Hi</main>;\n}\n"
 
 
 @pytest.fixture
-def instant_sleep(monkeypatch):
-    """Make the runner's stub delays instant."""
-
-    async def _noop(*_args, **_kwargs):
-        return None
-
-    monkeypatch.setattr(task_runner.asyncio, "sleep", _noop)
-
-
-@pytest.fixture
 def fake_generation(monkeypatch, tmp_path):
     """Replace the real Agent + filesystem writes so the pipeline runs hermetically."""
 
@@ -59,11 +49,16 @@ def fake_generation(monkeypatch, tmp_path):
 
     monkeypatch.setattr(task_runner.github_ops, "create_and_push", fake_push)
 
+    async def fake_deploy(_path):
+        return "https://fake-app.vercel.app"
+
+    monkeypatch.setattr(task_runner.vercel_ops, "deploy", fake_deploy)
+
 
 # --- Runner unit tests (lifecycle correctness) ---
 
 
-def test_runner_walks_full_lifecycle(instant_sleep, fake_generation):
+def test_runner_walks_full_lifecycle(fake_generation):
     task = Task(prompt="Build a boxing gym landing page")
     assert task.status == TaskStatus.pending
 
@@ -82,7 +77,7 @@ def test_runner_walks_full_lifecycle(instant_sleep, fake_generation):
     assert any("complete" in m for m in messages)
 
 
-def test_runner_marks_failed_when_generation_raises(instant_sleep, monkeypatch):
+def test_runner_marks_failed_when_generation_raises(monkeypatch):
     async def boom(_prompt):
         raise RuntimeError("kaboom")
 
@@ -100,7 +95,7 @@ def test_runner_marks_failed_when_generation_raises(instant_sleep, monkeypatch):
 # --- Endpoint tests (HTTP contract) ---
 
 
-def test_create_task_returns_201_and_pending(instant_sleep, fake_generation):
+def test_create_task_returns_201_and_pending(fake_generation):
     resp = client.post("/tasks", json={"prompt": "Build a coffee shop landing page"})
     assert resp.status_code == 201
     body = resp.json()
@@ -109,7 +104,7 @@ def test_create_task_returns_201_and_pending(instant_sleep, fake_generation):
     assert body["status"] == "pending"
 
 
-def test_get_task_after_completion(instant_sleep, fake_generation):
+def test_get_task_after_completion(fake_generation):
     created = client.post("/tasks", json={"prompt": "Build a SaaS landing page"}).json()
     resp = client.get(f"/tasks/{created['id']}")
     assert resp.status_code == 200

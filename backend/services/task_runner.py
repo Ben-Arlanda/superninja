@@ -1,17 +1,13 @@
-"""The task runner — drives a Task through its lifecycle in the background.
+"""The task runner — drives a Task through its full lifecycle in the background.
 
-Phase 2: the `generating_files` step is now REAL (the Agent generates the app into
-its workspace). The commit/push/deploy steps remain stubs until Phases 4-6. The
-surrounding structure (statuses, logging, failure handling) is unchanged.
+The pipeline is now fully real: generate (Agent) → commit (git) → push (GitHub) →
+deploy (Vercel). The try/except keeps a failed step from crashing silently — it lands
+on the Task as `failed` + an error message.
 """
-
-import asyncio
 
 from agents.page_generator import generate_page_code
 from models.task import Task, TaskStatus
-from services import git_ops, github_ops, workspace
-
-STEP_DELAY_SECONDS = 0.5
+from services import git_ops, github_ops, vercel_ops, workspace
 
 
 async def run_task(task: Task) -> None:
@@ -20,7 +16,7 @@ async def run_task(task: Task) -> None:
         task.status = TaskStatus.running
         task.log("Task started.")
 
-        # --- REAL (Phase 2): generate the app into its own workspace ---
+        # Generate the app into its own workspace
         task.status = TaskStatus.generating_files
         task.log("Creating workspace from scaffold...")
         workspace_path = workspace.create_workspace(task.id)
@@ -29,22 +25,23 @@ async def run_task(task: Task) -> None:
         workspace.write_page(workspace_path, code)
         task.log(f"Generated app/page.tsx ({len(code)} characters).")
 
-        # --- STUBS (become real in Phases 4-6) ---
+        # Commit to a fresh local git repo
         task.status = TaskStatus.committing
         task.log("Committing generated app to a fresh Git repo...")
         await git_ops.init_and_commit(workspace_path, task.prompt)
         task.log("Committed on branch 'main'.")
 
+        # Create a GitHub repo and push (archival)
         task.status = TaskStatus.pushing
         task.log("Creating GitHub repo and pushing...")
         task.repo_url = await github_ops.create_and_push(workspace_path, task.prompt, task.id)
         task.log(f"Pushed to {task.repo_url}")
 
+        # Deploy to Vercel and capture the live URL
         task.status = TaskStatus.deploying
-        task.log("Deploying to Vercel... (stub)")
-        await asyncio.sleep(STEP_DELAY_SECONDS)
+        task.log("Deploying to Vercel (building remotely, this can take a minute)...")
+        task.deployment_url = await vercel_ops.deploy(workspace_path)
 
-        task.deployment_url = f"https://superninja-demo-{task.id[:8]}.vercel.app"
         task.status = TaskStatus.completed
         task.log(f"Deployment complete: {task.deployment_url}")
     except Exception as exc:  # noqa: BLE001 - any failure must land on the task

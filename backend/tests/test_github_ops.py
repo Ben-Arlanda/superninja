@@ -37,7 +37,7 @@ def test_create_and_push_uses_transient_token_url(monkeypatch):
 
     calls: list[list[str]] = []
 
-    async def fake_run(cmd, cwd=None):
+    async def fake_run(cmd, cwd=None, secret=None):
         calls.append(cmd)
 
     monkeypatch.setattr(github_ops.shell, "run", fake_run)

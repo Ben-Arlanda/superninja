@@ -15,17 +15,20 @@ class CommandError(RuntimeError):
     """Raised when an external command exits with a non-zero status."""
 
 
-async def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
+async def run(
+    cmd: list[str], cwd: Path | None = None, secret: str | None = None
+) -> subprocess.CompletedProcess:
     """Run `cmd` (optionally in `cwd`) on a worker thread; raise on non-zero exit.
 
-    Output is captured; on failure the CommandError message includes stderr so the
-    Task can record a useful reason.
+    On failure the CommandError reports only the program name (not the args, which may
+    contain a token/URL) plus stderr — and any `secret` passed is redacted from stderr.
     """
     result = await asyncio.to_thread(
         subprocess.run, cmd, cwd=cwd, capture_output=True, text=True
     )
     if result.returncode != 0:
-        raise CommandError(
-            f"`{' '.join(cmd)}` failed (exit {result.returncode}): {result.stderr.strip()}"
-        )
+        stderr = result.stderr.strip()
+        if secret:
+            stderr = stderr.replace(secret, "***")
+        raise CommandError(f"`{cmd[0]}` failed (exit {result.returncode}): {stderr}")
     return result

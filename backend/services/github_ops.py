@@ -53,7 +53,8 @@ async def create_and_push(workspace_path: Path, prompt: str, task_id: str) -> st
     html_url = repo["html_url"]
 
     # Clean remote saved on disk; token lives only in the transient push URL.
-    push_url = clone_url.replace("https://", f"https://x-access-token:{_token()}@", 1)
+    token = _token()
+    push_url = clone_url.replace("https://", f"https://x-access-token:{token}@", 1)
     await shell.run(["git", "remote", "add", "origin", clone_url], cwd=workspace_path)
-    await shell.run(["git", "push", push_url, "main"], cwd=workspace_path)
+    await shell.run(["git", "push", push_url, "main"], cwd=workspace_path, secret=token)
     return html_url
