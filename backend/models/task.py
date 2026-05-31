@@ -54,6 +54,7 @@ class Task(BaseModel):
     status: TaskStatus = TaskStatus.pending
     logs: list[LogEntry] = Field(default_factory=list)
     deployment_url: str | None = None
+    repo_url: str | None = None
     error: str | None = None
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)

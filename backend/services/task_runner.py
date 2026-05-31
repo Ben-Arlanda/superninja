@@ -9,7 +9,7 @@ import asyncio
 
 from agents.page_generator import generate_page_code
 from models.task import Task, TaskStatus
-from services import git_ops, workspace
+from services import git_ops, github_ops, workspace
 
 STEP_DELAY_SECONDS = 0.5
 
@@ -36,8 +36,9 @@ async def run_task(task: Task) -> None:
         task.log("Committed on branch 'main'.")
 
         task.status = TaskStatus.pushing
-        task.log("Pushing code to GitHub... (stub)")
-        await asyncio.sleep(STEP_DELAY_SECONDS)
+        task.log("Creating GitHub repo and pushing...")
+        task.repo_url = await github_ops.create_and_push(workspace_path, task.prompt, task.id)
+        task.log(f"Pushed to {task.repo_url}")
 
         task.status = TaskStatus.deploying
         task.log("Deploying to Vercel... (stub)")

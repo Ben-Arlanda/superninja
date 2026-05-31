@@ -54,6 +54,11 @@ def fake_generation(monkeypatch, tmp_path):
 
     monkeypatch.setattr(task_runner.git_ops, "init_and_commit", fake_commit)
 
+    async def fake_push(_path, _prompt, _task_id):
+        return "https://github.com/me/fake-repo"
+
+    monkeypatch.setattr(task_runner.github_ops, "create_and_push", fake_push)
+
 
 # --- Runner unit tests (lifecycle correctness) ---
 
@@ -66,12 +71,13 @@ def test_runner_walks_full_lifecycle(instant_sleep, fake_generation):
 
     assert task.status == TaskStatus.completed
     assert task.deployment_url and task.deployment_url.startswith("https://")
+    assert task.repo_url == "https://github.com/me/fake-repo"
     assert task.error is None
     messages = [entry.message for entry in task.logs]
     assert any("started" in m for m in messages)
     assert any("Generating" in m for m in messages)
     assert any("Committing" in m for m in messages)
-    assert any("Pushing" in m for m in messages)
+    assert any("Pushed" in m for m in messages)
     assert any("Deploying" in m for m in messages)
     assert any("complete" in m for m in messages)
 
@@ -110,6 +116,7 @@ def test_get_task_after_completion(instant_sleep, fake_generation):
     body = resp.json()
     assert body["status"] == "completed"
     assert body["deployment_url"].startswith("https://")
+    assert body["repo_url"].startswith("https://github.com")
 
 
 def test_get_unknown_task_returns_404():
