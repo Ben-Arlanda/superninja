@@ -1,40 +1,51 @@
-"""The stub Agent — a tracer bullet that exercises the full task lifecycle.
+"""The task runner — drives a Task through its lifecycle in the background.
 
-Phase 1 has no real generation/Git/Vercel yet. This fake executor walks a Task
-through every real status with short delays and log lines, then sets a fake
-deployment URL. Later phases replace each step's body with real work; the
-surrounding machinery (statuses, logging, failure handling) stays the same.
+Phase 2: the `generating_files` step is now REAL (the Agent generates the app into
+its workspace). The commit/push/deploy steps remain stubs until Phases 4-6. The
+surrounding structure (statuses, logging, failure handling) is unchanged.
 """
 
 import asyncio
 
+from agents.page_generator import generate_page_code
 from models.task import Task, TaskStatus
-
-# Each tuple is (status to set, log message) for one step of the fake pipeline.
-# Order matters — this is the lifecycle the UI will watch advance.
-_STEPS: list[tuple[TaskStatus, str]] = [
-    (TaskStatus.running, "Task started."),
-    (TaskStatus.generating_files, "Generating application files..."),
-    (TaskStatus.committing, "Committing generated code to Git..."),
-    (TaskStatus.pushing, "Pushing code to GitHub..."),
-    (TaskStatus.deploying, "Deploying to Vercel..."),
-]
+from services import workspace
 
 STEP_DELAY_SECONDS = 0.5
 
 
 async def run_task(task: Task) -> None:
-    """Drive a Task from pending to completed (or failed) in the background."""
+    """Drive a Task from pending to completed (or failed)."""
     try:
-        for status, message in _STEPS:
-            task.status = status
-            task.log(message)
-            await asyncio.sleep(STEP_DELAY_SECONDS)
+        task.status = TaskStatus.running
+        task.log("Task started.")
+
+        # --- REAL (Phase 2): generate the app into its own workspace ---
+        task.status = TaskStatus.generating_files
+        task.log("Creating workspace from scaffold...")
+        workspace_path = workspace.create_workspace(task.id)
+        task.log("Generating landing page with Claude (Opus 4.8)...")
+        code = await generate_page_code(task.prompt)
+        workspace.write_page(workspace_path, code)
+        task.log(f"Generated app/page.tsx ({len(code)} characters).")
+
+        # --- STUBS (become real in Phases 4-6) ---
+        task.status = TaskStatus.committing
+        task.log("Committing generated code to Git... (stub)")
+        await asyncio.sleep(STEP_DELAY_SECONDS)
+
+        task.status = TaskStatus.pushing
+        task.log("Pushing code to GitHub... (stub)")
+        await asyncio.sleep(STEP_DELAY_SECONDS)
+
+        task.status = TaskStatus.deploying
+        task.log("Deploying to Vercel... (stub)")
+        await asyncio.sleep(STEP_DELAY_SECONDS)
 
         task.deployment_url = f"https://superninja-demo-{task.id[:8]}.vercel.app"
         task.status = TaskStatus.completed
         task.log(f"Deployment complete: {task.deployment_url}")
-    except Exception as exc:  # noqa: BLE001 - any failure must land on the task, not crash silently
+    except Exception as exc:  # noqa: BLE001 - any failure must land on the task
         task.status = TaskStatus.failed
         task.error = str(exc)
         task.log(f"Task failed: {exc}")

@@ -8,5 +8,8 @@ frontend/.next/
 .env
 .env.local
 
-# Local-only build journal (never committed)
-BUILD_LOG.md
+# Generated apps (each Task writes here; they get their own repos)
+backend/workspace/
+
+# Local-only personal learning notes (never committed)
+LEARNING.md
