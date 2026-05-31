@@ -20,7 +20,7 @@ async def run_task(task: Task) -> None:
         task.status = TaskStatus.generating_files
         task.log("Creating workspace from scaffold...")
         workspace_path = workspace.create_workspace(task.id)
-        task.log("Generating landing page with Claude (Opus 4.8)...")
+        task.log("Generating the application...")
         code = await generate_page_code(task.prompt)
         workspace.write_page(workspace_path, code)
         task.log(f"Generated app/page.tsx ({len(code)} characters).")

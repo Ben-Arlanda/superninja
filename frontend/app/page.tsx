@@ -88,8 +88,8 @@ export default function Home() {
             <span className="text-accent">from a sentence.</span>
           </h1>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">
-            Describe what you want. SuperNinja generates it with Claude, commits it,
-            pushes it to GitHub, and deploys it live to Vercel — while you watch.
+            Describe what you want. SuperNinja generates it, commits it, pushes it to
+            GitHub, and deploys it live to Vercel — while you watch.
           </p>
         </section>
 
@@ -104,7 +104,7 @@ export default function Home() {
           />
           <div className="mt-3 flex items-center justify-between">
             <span className="font-mono text-xs text-muted">
-              {running ? "build in progress…" : "Opus 4.8 · Next.js · Vercel"}
+              {running ? "build in progress…" : "Autonomous agent · Next.js · Vercel"}
             </span>
             {task && !running ? (
               <button
